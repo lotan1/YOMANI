@@ -26,10 +26,29 @@
   let weekStart = S.startOfWeek(new Date());
   let person = null;
   let bookedKeys = new Set();
+  let pendingSignIn = false;
+  let gisAttempts = 0;
 
   function setStatus(msg, isError = false) {
     el.status.textContent = msg || "";
     el.status.classList.toggle("error", !!isError);
+  }
+
+  function requestSignIn() {
+    if (!tokenClient) {
+      pendingSignIn = true;
+      setStatus("Google עדיין נטען… מנסה שוב אוטומטית.");
+      initGis();
+      return;
+    }
+    pendingSignIn = false;
+    setStatus("נפתח חלון התחברות Google…");
+    try {
+      tokenClient.requestAccessToken({ prompt: "consent" });
+    } catch (err) {
+      console.error(err);
+      setStatus("לא הצלחנו לפתוח את Google. רעננו את הדף.", true);
+    }
   }
 
   async function api(path, options = {}) {
@@ -240,7 +259,20 @@
   }
 
   function initGis() {
+    if (tokenClient) {
+      if (pendingSignIn) requestSignIn();
+      return;
+    }
     if (!window.google?.accounts?.oauth2) {
+      gisAttempts += 1;
+      if (gisAttempts > 80) {
+        setStatus(
+          "Google לא נטען. בדקו חוסם פרסומות / רשת, ורעננו. ודאו ש־https://yomanmenahalimhonenoshi.netlify.app רשום ב־Authorized JavaScript origins.",
+          true
+        );
+        pendingSignIn = false;
+        return;
+      }
       setTimeout(initGis, 150);
       return;
     }
@@ -252,18 +284,29 @@
       ].join(" "),
       callback: (resp) => {
         if (resp.error) {
-          setStatus("ההתחברות נכשלה.", true);
+          setStatus(
+            resp.error === "popup_closed_by_user"
+              ? "החלון נסגר — נסו שוב."
+              : `ההתחברות נכשלה (${resp.error}).`,
+            true
+          );
           return;
         }
         accessToken = resp.access_token;
         afterLogin().catch((e) => setStatus(e.message, true));
       },
+      error_callback: (err) => {
+        console.error(err);
+        setStatus(
+          "שגיאת Google — לרוב origin_mismatch. הוסיפו את כתובת האתר ל־Authorized JavaScript origins.",
+          true
+        );
+      },
     });
+    if (pendingSignIn) requestSignIn();
   }
 
-  el.btnSignIn.addEventListener("click", () => {
-    tokenClient?.requestAccessToken({ prompt: accessToken ? "" : "consent" });
-  });
+  el.btnSignIn.addEventListener("click", () => requestSignIn());
   el.btnSignOut.addEventListener("click", () => showOut(""));
   el.btnReload.addEventListener("click", () => reload().catch((e) => setStatus(e.message, true)));
   el.btnPushBusy.addEventListener("click", () =>
@@ -296,4 +339,13 @@
   }, 60 * 60 * 1000);
 
   initGis();
+
+  window.__gisReady = () => {
+    gisAttempts = 0;
+    initGis();
+  };
+  window.__gisFailed = () => {
+    setStatus("טעינת Google נחסמה. בדקו חוסם פרסומות או נסו דפדפן אחר.", true);
+    pendingSignIn = false;
+  };
 })();

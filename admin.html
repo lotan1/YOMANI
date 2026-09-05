@@ -89,7 +89,7 @@
 
   <script src="config.js"></script>
   <script src="shared.js"></script>
-  <script src="https://accounts.google.com/gsi/client" async defer></script>
   <script src="admin.js"></script>
+  <script src="https://accounts.google.com/gsi/client" async defer onload="window.__gisReady&&window.__gisReady()" onerror="window.__gisFailed&&window.__gisFailed()"></script>
 </body>
 </html>
