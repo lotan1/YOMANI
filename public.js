@@ -23,6 +23,8 @@
   let selected = null;
   let tokenClient = null;
   let myToken = null;
+  let pendingMyCal = false;
+  let gisAttempts = 0;
 
   function setStatus(msg, isError = false) {
     el.status.textContent = msg || "";
@@ -32,6 +34,28 @@
   function setBookStatus(msg, isError = false) {
     el.bookStatus.textContent = msg || "";
     el.bookStatus.classList.toggle("error", !!isError);
+  }
+
+  function requestMyCal() {
+    if (!tokenClient) {
+      pendingMyCal = true;
+      el.myCalStatus.textContent = "Google עדיין נטען… מנסה שוב אוטומטית.";
+      ensureGis();
+      return;
+    }
+    pendingMyCal = false;
+    el.myCalStatus.textContent = "נפתח חלון התחברות Google…";
+    try {
+      tokenClient.requestAccessToken({ prompt: "consent" });
+    } catch (err) {
+      console.error(err);
+      el.myCalStatus.textContent = "לא הצלחנו לפתוח את Google. רעננו את הדף.";
+    }
+  }
+
+  function ensureGis() {
+    if (tokenClient) return;
+    initGis();
   }
 
   async function loadAvailability() {
@@ -115,7 +139,18 @@
   });
 
   function initGis() {
+    if (tokenClient) {
+      if (pendingMyCal) requestMyCal();
+      return;
+    }
     if (!window.google?.accounts?.oauth2) {
+      gisAttempts += 1;
+      if (gisAttempts > 80) {
+        el.myCalStatus.textContent =
+          "Google לא נטען. בדקו חוסם פרסומות / רשת, או רעננו. ודאו ש־origin רשום ב־Google Cloud.";
+        pendingMyCal = false;
+        return;
+      }
       setTimeout(initGis, 150);
       return;
     }
@@ -124,7 +159,10 @@
       scope: "https://www.googleapis.com/auth/calendar.freebusy",
       callback: async (resp) => {
         if (resp.error) {
-          el.myCalStatus.textContent = "החיבור בוטל.";
+          el.myCalStatus.textContent =
+            resp.error === "popup_closed_by_user"
+              ? "החלון נסגר — נסו שוב."
+              : `החיבור נכשל (${resp.error}).`;
           return;
         }
         myToken = resp.access_token;
@@ -132,14 +170,26 @@
         el.myCalStatus.textContent = "מסמן משבצות שפנויות גם אצלכם…";
         await markMyFree();
       },
+      error_callback: (err) => {
+        console.error(err);
+        el.myCalStatus.textContent =
+          "שגיאת Google (לעיתים origin_mismatch). הוסיפו את כתובת האתר ל־Authorized JavaScript origins.";
+      },
     });
+    if (pendingMyCal) requestMyCal();
   }
 
   async function markMyFree() {
     myFree = new Set();
     const keys = [...openMap.keys()];
-    if (!keys.length || !myToken) {
+    if (!myToken) {
       el.myCalStatus.textContent = "";
+      render();
+      return;
+    }
+    if (!keys.length) {
+      el.myCalStatus.textContent =
+        "היומן חובר, אבל אין עדיין משבצות פתוחות אצלנו לסמן מולן. אחרי סנכרון במסך הניהול זה יופיע.";
       render();
       return;
     }
@@ -181,13 +231,7 @@
     render();
   }
 
-  el.btnMyCal.addEventListener("click", () => {
-    if (!tokenClient) {
-      el.myCalStatus.textContent = "Google עדיין נטען…";
-      return;
-    }
-    tokenClient.requestAccessToken({ prompt: "" });
-  });
+  el.btnMyCal.addEventListener("click", () => requestMyCal());
 
   el.btnClearCal.addEventListener("click", () => {
     myFree = new Set();
@@ -211,4 +255,14 @@
 
   initGis();
   loadAvailability();
+
+  window.__gisReady = () => {
+    gisAttempts = 0;
+    initGis();
+  };
+  window.__gisFailed = () => {
+    el.myCalStatus.textContent =
+      "טעינת Google נחסמה. בדקו חוסם פרסומות או נסו דפדפן אחר.";
+    pendingMyCal = false;
+  };
 })();
