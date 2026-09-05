@@ -56,7 +56,8 @@
       ...options,
       headers: {
         "Content-Type": "application/json",
-        Authorization: `Bearer ${accessToken}`,
+        "X-Yomani-Token": accessToken || "",
+        Authorization: `Bearer ${accessToken || ""}`,
         ...(options.headers || {}),
       },
     });
@@ -85,7 +86,12 @@
 
   async function reload() {
     const data = await api("/api/admin");
-    person = data.interviewers[userEmail];
+    person = data.interviewers[userEmail] || {
+      closed: [],
+      forceOpen: [],
+      busy: [],
+      bookingCount: 0,
+    };
     bookedKeys = new Set((data.bookings || []).map((b) => b.slotKey));
 
     el.statRow.innerHTML = Object.entries(data.counts || {})
@@ -112,6 +118,7 @@
       .join("");
 
     renderBoard();
+    setStatus("מוכן.");
   }
 
   function escapeHtml(s) {

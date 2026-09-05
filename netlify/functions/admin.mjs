@@ -15,14 +15,14 @@ import {
 } from "./_lib.mjs";
 
 async function adminEmailFromAuth(req) {
-  const auth = req.headers.get("authorization") || "";
-  const m = auth.match(/^Bearer\s+(.+)$/i);
-  if (!m) return "";
+  const token =
+    req.headers.get("x-yomani-token") ||
+    (req.headers.get("authorization") || "").replace(/^Bearer\s+/i, "").trim();
+  if (!token) return "";
   try {
-    const res = await fetch(
-      `https://www.googleapis.com/oauth2/v3/userinfo`,
-      { headers: { Authorization: `Bearer ${m[1]}` } }
-    );
+    const res = await fetch("https://www.googleapis.com/oauth2/v3/userinfo", {
+      headers: { Authorization: `Bearer ${token}` },
+    });
     if (!res.ok) return "";
     const me = await res.json();
     return String(me.email || "").toLowerCase();
@@ -38,8 +38,10 @@ function assertAdmin(email) {
 export default async (req) => {
   if (req.method === "OPTIONS") return corsOptions();
 
-  const email = adminEmailFromAuth(req);
-  if (!assertAdmin(email)) return json({ error: "unauthorized" }, 401);
+  const email = await adminEmailFromAuth(req);
+  if (!assertAdmin(email)) {
+    return json({ error: "unauthorized", detail: "not an allowed interviewer" }, 401);
+  }
 
   if (req.method === "GET") {
     const state = await getState();
