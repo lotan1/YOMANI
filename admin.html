@@ -1,0 +1,95 @@
+<!DOCTYPE html>
+<html lang="he" dir="rtl">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>ניהול תיאום ראיונות</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+  <link href="https://fonts.googleapis.com/css2?family=Heebo:wght@400;500;600;700&family=Rubik:wght@500;700&display=swap" rel="stylesheet" />
+  <link rel="stylesheet" href="styles.css" />
+</head>
+<body>
+  <div class="page">
+    <header class="top">
+      <div class="brand">
+        <p class="eyebrow">מסך ניהול</p>
+        <h1>לוח זמינות + הרשמות</h1>
+        <p class="sub">רק לוטן וורד · <a href="/">חזרה לדף הציבורי</a></p>
+      </div>
+      <div class="auth">
+        <button type="button" class="btn primary" id="btnSignIn">התחברות עם Google</button>
+        <div class="user-chip" id="userChip" hidden>
+          <span id="userEmail"></span>
+          <button type="button" class="btn ghost" id="btnSignOut">יציאה</button>
+        </div>
+      </div>
+    </header>
+
+    <section class="gate card-block" id="gate">
+      <p>התחברו עם <strong>lotan.br@gmail.com</strong> או <strong>veredpisga@gmail.com</strong>.</p>
+      <p class="hint">כאן מגדירים משבצות, רואים מי נרשם אל מי, ומסנכרנים מול היומן.</p>
+    </section>
+
+    <div id="app" hidden>
+      <section class="stats card-block">
+        <h2>סיכום הרשמות</h2>
+        <div class="stat-row" id="statRow"></div>
+        <p class="tiny" id="syncMeta"></p>
+        <div class="toolbar tight">
+          <button type="button" class="btn secondary" id="btnPushBusy">סנכרון היומן שלי עכשיו</button>
+          <button type="button" class="btn secondary" id="btnSyncAll">סנכרון שני היומנים (שרת)</button>
+          <button type="button" class="btn ghost" id="btnReload">רענון נתונים</button>
+        </div>
+      </section>
+
+      <section class="board-wrap">
+        <div class="toolbar">
+          <div class="week-nav">
+            <button type="button" class="btn ghost" id="btnPrevWeek">→</button>
+            <h2 id="weekLabel"></h2>
+            <button type="button" class="btn ghost" id="btnNextWeek">←</button>
+            <button type="button" class="btn ghost" id="btnThisWeek">השבוע</button>
+          </div>
+          <div class="legend">
+            <span><i class="dot open"></i> פתוח</span>
+            <span><i class="dot closed"></i> סגור ידנית</span>
+            <span><i class="dot busy"></i> תפוס ביומן</span>
+            <span><i class="dot force"></i> נפתח ידנית (מעל תפוס)</span>
+          </div>
+        </div>
+        <p class="status" id="status" role="status"></p>
+        <p class="hint">
+          קליק על פתוח → סגירה. קליק על סגור → פתיחה.
+          קליק על תפוס → פתיחה זמנית; בסנכרון הבא (כל שעה / ידני) אם עדיין תפוס — ייחסם מחדש.
+        </p>
+        <div class="board-scroll">
+          <div class="board" id="board"></div>
+        </div>
+      </section>
+
+      <section class="card-block">
+        <h2>מי נרשם</h2>
+        <div class="table-wrap">
+          <table class="data" id="bookingsTable">
+            <thead>
+              <tr>
+                <th>מועד</th>
+                <th>שם</th>
+                <th>אימייל</th>
+                <th>מראיין/ת</th>
+              </tr>
+            </thead>
+            <tbody></tbody>
+          </table>
+        </div>
+      </section>
+    </div>
+  </div>
+
+  <script src="config.js"></script>
+  <script src="shared.js"></script>
+  <script src="https://accounts.google.com/gsi/client" async defer></script>
+  <script src="admin.js"></script>
+</body>
+</html>

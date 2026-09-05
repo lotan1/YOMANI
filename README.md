@@ -1,52 +1,61 @@
-# Interview availability board (`CALENDERS`)
+# YOMANI — Interview scheduling
 
-A static page for managing interview slots against Google Calendar.
+Public booking + admin availability for Lotan & Vered.
 
-**Allowed accounts:** `lotan.br@gmail.com` · `veredpisga@gmail.com`
+## URLs
 
-## What it does
+| Page | URL |
+|------|-----|
+| Public (candidates) | https://yomanmenahalimhonenoshi.netlify.app/ |
+| Admin | https://yomanmenahalimhonenoshi.netlify.app/admin.html |
 
-- Sign in with Google (no extra password)
-- Weekly board: **Sunday–Friday**, **09:00–21:00**, **15-minute** slots
-- Free time on the calendar shows as open for interviews
-- Click an open slot → closes it and creates a private Busy event: `⛔ ראיון חסום`
-- Click a slot closed from this board → deletes that event and reopens the slot
-- Normal calendar meetings stay “busy” and cannot be changed here
+## Public page
 
-## Files
+1. Candidate picks **one** open slot on the board.
+2. Enters full name + email (no account / password).
+3. Optional: connect their Google Calendar — slots that are free on **their** calendar **and** open on ours glow on the board. They can still pick any open slot.
+4. On confirm → booking is saved, assigned to Lotan or Vered (whoever is free; round-robin if both), calendar invite when a service account is configured.
 
-| File | Role |
-|------|------|
-| `index.html` | Board UI |
-| `styles.css` | Styles |
-| `app.js` | OAuth, FreeBusy, open/close |
-| `config.js` | Client ID and allowed emails |
+## Admin page
 
-## Run locally
+Allowed Google accounts: `lotan.br@gmail.com`, `veredpisga@gmail.com`.
 
-From this folder:
+- See who booked whom + totals per interviewer
+- Toggle slots: open / close
+- Force-open a calendar-busy slot (temporary). On the next sync, if still busy → blocked again
+- “Sync my calendar” pushes FreeBusy from the signed-in admin
+- Hourly scheduled sync (server) when `GOOGLE_SERVICE_ACCOUNT_JSON` is set
+- While the admin tab is open, data also reloads every hour
+
+## Google Cloud (OAuth client)
+
+Authorized JavaScript origins must include:
+
+- `https://yomanmenahalimhonenoshi.netlify.app`
+- `http://localhost:5500` (local)
+
+Client ID lives in `config.js`.
+
+## Netlify: service account (for invites + hourly sync)
+
+1. Google Cloud → create a **Service Account** → JSON key
+2. Enable **Google Calendar API**
+3. Share both calendars with the SA email (**Make changes to events**)
+4. Netlify site env var `GOOGLE_SERVICE_ACCOUNT_JSON` = full JSON key (one line)
+5. Redeploy
+
+Without the service account: admins can still sync their own FreeBusy from the admin UI; bookings are stored but calendar invites need the SA.
+
+## Local
 
 ```powershell
-npx --yes serve -p 5500
+npm install
+npx --yes netlify-cli dev
 ```
 
-Open in the browser: `http://localhost:5500`
+## Slot rules
 
-In Google Cloud Console, under the OAuth client, make sure `http://localhost:5500` is listed in **Authorized JavaScript origins**.
-
-## Google setup (one time)
-
-1. [Google Cloud Console](https://console.cloud.google.com/) — existing or new project
-2. Enable **Google Calendar API**
-3. **OAuth consent screen** — add both emails as Test users (while in Testing)
-4. **Credentials** → OAuth client ID of type **Web application**
-5. Authorized JavaScript origins — at least `http://localhost:5500`
-6. Paste the Client ID into `config.js` as `clientId`
-
-The Client ID is already set in this project; if you switch Google projects, update `config.js`.
-
-## Notes
-
-- Each signed-in user manages only **their own** calendar
-- OAuth Testing mode is enough for short internal use
-- No live hosting / deploy steps here — intended for local use or a GitHub copy only
+- Sun–Fri, 09:00–21:00, 15-minute slots
+- Public slot is shown if **at least one** interviewer can take it
+- Manual close always hides for that interviewer
+- Force-open overrides busy until the next sync finds it busy again

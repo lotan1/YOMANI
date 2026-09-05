@@ -3,35 +3,41 @@
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1" />
-  <title>לוח זמינות לראיונות</title>
+  <title>תיאום ריאיון</title>
   <link rel="preconnect" href="https://fonts.googleapis.com" />
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
   <link href="https://fonts.googleapis.com/css2?family=Heebo:wght@400;500;600;700&family=Rubik:wght@500;700&display=swap" rel="stylesheet" />
   <link rel="stylesheet" href="styles.css" />
 </head>
 <body>
-  <div class="page">
+  <div class="page public">
     <header class="top">
       <div class="brand">
         <p class="eyebrow">תיאום ראיונות</p>
-        <h1>לוח זמינות</h1>
-        <p class="sub">א׳–ו׳ · 09:00–21:00 · משבצות של רבע שעה</p>
-      </div>
-      <div class="auth" id="authArea">
-        <button type="button" class="btn primary" id="btnSignIn" hidden>התחברות עם Google</button>
-        <div class="user-chip" id="userChip" hidden>
-          <span id="userEmail"></span>
-          <button type="button" class="btn ghost" id="btnSignOut">יציאה</button>
-        </div>
+        <h1>קביעת מועד</h1>
+        <p class="sub">בחרו משבצת אחת פנויה · א׳–ו׳ · 09:00–21:00 · רבע שעה</p>
       </div>
     </header>
 
-    <section class="gate" id="gate" hidden>
-      <p>התחברו עם <strong>lotan.br@gmail.com</strong> או <strong>veredpisga@gmail.com</strong>.</p>
-      <p class="hint">אחרי ההתחברות נטען מהיומן כל הזמן הפנוי בטווח, ואפשר לסגור או לפתוח משבצת בקליק.</p>
+    <section class="how card-block">
+      <h2>איך זה עובד</h2>
+      <ol>
+        <li>בחרו בלוח <strong>משבצת אחת</strong> שמתאימה לכם (ירוק = פנוי אצלנו).</li>
+        <li>מלאו שם מלא ואימייל — בלי סיסמה ובלי הרשמה.</li>
+        <li>לאחר אישור תקבלו זימון ליומן (ולקישור לשיחה אם מוגדר).</li>
+      </ol>
+      <p class="hint">
+        אופציונלי: התחברו עם Google Calendar שלכם — המשבצות שגם אצלכם פנויות
+        <strong>יזהרו</strong> על הלוח. בכל מקרה אפשר לבחור כל משבצת פנויה אצלנו.
+      </p>
+      <div class="auth-row">
+        <button type="button" class="btn secondary" id="btnMyCal">הצג זמינות מהיומן שלי (אופציונלי)</button>
+        <button type="button" class="btn ghost" id="btnClearCal" hidden>בטל סימון יומן</button>
+        <span class="tiny" id="myCalStatus"></span>
+      </div>
     </section>
 
-    <section class="board-wrap" id="boardWrap" hidden>
+    <section class="board-wrap">
       <div class="toolbar">
         <div class="week-nav">
           <button type="button" class="btn ghost" id="btnPrevWeek" aria-label="שבוע קודם">→</button>
@@ -40,30 +46,39 @@
           <button type="button" class="btn ghost" id="btnThisWeek">השבוע</button>
         </div>
         <div class="legend">
-          <span><i class="dot open"></i> פתוח לראיון</span>
-          <span><i class="dot closed"></i> סגור (ידני)</span>
-          <span><i class="dot busy"></i> תפוס ביומן</span>
-          <span><i class="dot past"></i> עבר</span>
+          <span><i class="dot open"></i> פנוי אצלנו</span>
+          <span><i class="dot glow"></i> פנוי גם אצלכם</span>
+          <span><i class="dot selected"></i> נבחר</span>
+          <span><i class="dot muted"></i> לא זמין</span>
         </div>
-        <button type="button" class="btn secondary" id="btnRefresh">רענון מהיומן</button>
       </div>
-
       <p class="status" id="status" role="status"></p>
-
       <div class="board-scroll">
         <div class="board" id="board"></div>
       </div>
+    </section>
 
-      <p class="footnote">
-        קליק על משבצת <strong>פתוחה</strong> → סוגר וחוסם ביומן שלך.
-        קליק על משבצת <strong>סגורה</strong> (שנסגרה מכאן) → פותח שוב.
-        משבצות תפוסות מהיומן לא ניתנות לשינוי מכאן.
-      </p>
+    <section class="book card-block" id="bookPanel">
+      <h2>פרטי הזמנה</h2>
+      <p class="hint" id="selectedLabel">עדיין לא נבחרה משבצת.</p>
+      <form id="bookForm" class="book-form">
+        <label>
+          שם מלא
+          <input type="text" name="name" required autocomplete="name" />
+        </label>
+        <label>
+          אימייל
+          <input type="email" name="email" required autocomplete="email" />
+        </label>
+        <button type="submit" class="btn primary" id="btnBook" disabled>אישור והזמנה</button>
+      </form>
+      <p class="status" id="bookStatus" role="status"></p>
     </section>
   </div>
 
   <script src="config.js"></script>
+  <script src="shared.js"></script>
   <script src="https://accounts.google.com/gsi/client" async defer></script>
-  <script src="app.js"></script>
+  <script src="public.js"></script>
 </body>
 </html>
