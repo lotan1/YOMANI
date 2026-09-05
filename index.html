@@ -1,0 +1,69 @@
+<!DOCTYPE html>
+<html lang="he" dir="rtl">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>לוח זמינות לראיונות</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+  <link href="https://fonts.googleapis.com/css2?family=Heebo:wght@400;500;600;700&family=Rubik:wght@500;700&display=swap" rel="stylesheet" />
+  <link rel="stylesheet" href="styles.css" />
+</head>
+<body>
+  <div class="page">
+    <header class="top">
+      <div class="brand">
+        <p class="eyebrow">תיאום ראיונות</p>
+        <h1>לוח זמינות</h1>
+        <p class="sub">א׳–ו׳ · 09:00–21:00 · משבצות של רבע שעה</p>
+      </div>
+      <div class="auth" id="authArea">
+        <button type="button" class="btn primary" id="btnSignIn" hidden>התחברות עם Google</button>
+        <div class="user-chip" id="userChip" hidden>
+          <span id="userEmail"></span>
+          <button type="button" class="btn ghost" id="btnSignOut">יציאה</button>
+        </div>
+      </div>
+    </header>
+
+    <section class="gate" id="gate" hidden>
+      <p>התחברו עם <strong>lotan.br@gmail.com</strong> או <strong>veredpisga@gmail.com</strong>.</p>
+      <p class="hint">אחרי ההתחברות נטען מהיומן כל הזמן הפנוי בטווח, ואפשר לסגור או לפתוח משבצת בקליק.</p>
+    </section>
+
+    <section class="board-wrap" id="boardWrap" hidden>
+      <div class="toolbar">
+        <div class="week-nav">
+          <button type="button" class="btn ghost" id="btnPrevWeek" aria-label="שבוע קודם">→</button>
+          <h2 id="weekLabel"></h2>
+          <button type="button" class="btn ghost" id="btnNextWeek" aria-label="שבוע הבא">←</button>
+          <button type="button" class="btn ghost" id="btnThisWeek">השבוע</button>
+        </div>
+        <div class="legend">
+          <span><i class="dot open"></i> פתוח לראיון</span>
+          <span><i class="dot closed"></i> סגור (ידני)</span>
+          <span><i class="dot busy"></i> תפוס ביומן</span>
+          <span><i class="dot past"></i> עבר</span>
+        </div>
+        <button type="button" class="btn secondary" id="btnRefresh">רענון מהיומן</button>
+      </div>
+
+      <p class="status" id="status" role="status"></p>
+
+      <div class="board-scroll">
+        <div class="board" id="board"></div>
+      </div>
+
+      <p class="footnote">
+        קליק על משבצת <strong>פתוחה</strong> → סוגר וחוסם ביומן שלך.
+        קליק על משבצת <strong>סגורה</strong> (שנסגרה מכאן) → פותח שוב.
+        משבצות תפוסות מהיומן לא ניתנות לשינוי מכאן.
+      </p>
+    </section>
+  </div>
+
+  <script src="config.js"></script>
+  <script src="https://accounts.google.com/gsi/client" async defer></script>
+  <script src="app.js"></script>
+</body>
+</html>
