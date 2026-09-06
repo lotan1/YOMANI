@@ -308,54 +308,59 @@
   }
 
   function initGis() {
-    if (tokenClient) {
-      if (pendingSignIn) requestSignIn();
-      return;
-    }
-    if (!window.google?.accounts?.oauth2) {
-      gisAttempts += 1;
-      if (gisAttempts > 80) {
-        setStatus(
-          "Google לא נטען. בדקו חוסם פרסומות / רשת, ורעננו. ודאו ש־https://yomanmenahalimhonenoshi.netlify.app רשום ב־Authorized JavaScript origins.",
-          true
-        );
-        pendingSignIn = false;
+    try {
+      if (tokenClient) {
+        if (pendingSignIn) requestSignIn();
         return;
       }
-      setTimeout(initGis, 150);
-      return;
-    }
-    tokenClient = google.accounts.oauth2.initTokenClient({
-      client_id: cfg.clientId,
-      scope: [
-        "openid",
-        "email",
-        "profile",
-        "https://www.googleapis.com/auth/calendar.freebusy",
-        "https://www.googleapis.com/auth/userinfo.email",
-      ].join(" "),
-      callback: (resp) => {
-        if (resp.error) {
+      if (!window.google?.accounts?.oauth2) {
+        gisAttempts += 1;
+        if (gisAttempts > 80) {
           setStatus(
-            resp.error === "popup_closed_by_user"
-              ? "החלון נסגר — נסו שוב."
-              : `ההתחברות נכשלה (${resp.error}).`,
+            "Google לא נטען. בדקו חוסם פרסומות / רשת, ורעננו. ודאו ש־https://yomanmenahalimhonenoshi.netlify.app רשום ב־Authorized JavaScript origins.",
             true
           );
+          pendingSignIn = false;
           return;
         }
-        accessToken = resp.access_token;
-        afterLogin().catch((e) => setStatus(e.message, true));
-      },
-      error_callback: (err) => {
-        console.error(err);
-        setStatus(
-          "שגיאת Google — לרוב origin_mismatch. הוסיפו את כתובת האתר ל־Authorized JavaScript origins.",
-          true
-        );
-      },
-    });
-    if (pendingSignIn) requestSignIn();
+        setTimeout(initGis, 150);
+        return;
+      }
+      tokenClient = google.accounts.oauth2.initTokenClient({
+        client_id: cfg.clientId,
+        scope: [
+          "openid",
+          "email",
+          "profile",
+          "https://www.googleapis.com/auth/calendar.freebusy",
+          "https://www.googleapis.com/auth/userinfo.email",
+        ].join(" "),
+        callback: (resp) => {
+          if (resp.error) {
+            setStatus(
+              resp.error === "popup_closed_by_user"
+                ? "החלון נסגר — נסו שוב."
+                : `ההתחברות נכשלה (${resp.error}).`,
+              true
+            );
+            return;
+          }
+          accessToken = resp.access_token;
+          afterLogin().catch((e) => setStatus(e.message, true));
+        },
+        error_callback: (err) => {
+          console.error(err);
+          setStatus(
+            "שגיאת Google — לרוב origin_mismatch. הוסיפו את כתובת האתר ל־Authorized JavaScript origins.",
+            true
+          );
+        },
+      });
+      if (pendingSignIn) requestSignIn();
+    } catch (err) {
+      console.error("initGis failed", err);
+      setStatus("חיבור Google נכשל זמנית — נסו שוב.", true);
+    }
   }
 
   el.btnSignIn.addEventListener("click", () => requestSignIn());
@@ -390,8 +395,6 @@
     }
   }, 60 * 60 * 1000);
 
-  initGis();
-
   window.__gisReady = () => {
     gisAttempts = 0;
     initGis();
@@ -412,4 +415,7 @@
       showOut(`יש להתחבר מחדש: ${e.message}`);
     });
   }
+
+  // Google init last — must not block UI
+  initGis();
 })();
