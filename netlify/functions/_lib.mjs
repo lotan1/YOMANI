@@ -138,16 +138,17 @@ export function isOfferable(person, key) {
   return true;
 }
 
-/** Combined public slots: open if at least one interviewer can take it and not already booked */
+/** Combined public slots: open if at least one interviewer can take it and not already booked.
+ *  Before the first calendar sync, busy=[] so all schedule slots are offerable (calendar-free by default).
+ */
 export function publicOpenSlots(state) {
-  if (!state.lastSyncAt) return [];
   const booked = new Set((state.bookings || []).map((b) => b.slotKey));
   const keys = allSlotKeys();
   const out = [];
   for (const key of keys) {
     if (booked.has(key)) continue;
     const who = INTERVIEWERS.filter((i) =>
-      isOfferable(state.interviewers[i.email], key)
+      isOfferable(state.interviewers[i.email] || { closed: [], busy: [], forceOpen: [] }, key)
     ).map((i) => i.email);
     if (who.length) out.push({ slotKey: key, interviewers: who });
   }

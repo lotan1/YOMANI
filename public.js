@@ -62,25 +62,34 @@
     setStatus("טוען משבצות פנויות…");
     try {
       const res = await fetch("/api/availability");
+      if (!res.ok) throw new Error(`HTTP ${res.status}`);
       const data = await res.json();
       openMap = new Map((data.slots || []).map((s) => [s.slotKey, s.interviewers]));
+      const n = openMap.size;
       setStatus(
-        !(data.slots || []).length
-          ? "עדיין אין משבצות פתוחות — המנהלים צריכים לסנכרן יומן במסך הניהול."
-          : data.lastSyncAt
-            ? `עודכן לאחרונה: ${new Date(data.lastSyncAt).toLocaleString("he-IL")}`
-            : "מוצגות המשבצות הפתוחות לתיאום."
+        n
+          ? `${n} משבצות פתוחות` +
+              (data.lastSyncAt
+                ? ` · עודכן ${new Date(data.lastSyncAt).toLocaleString("he-IL")}`
+                : " · טרם סונכרן יומן (מוצג לוח ברירת מחדל)")
+          : "אין משבצות פתוחות בטווח הנוכחי."
       );
-      render();
     } catch (err) {
       console.error(err);
-      setStatus("לא הצלחנו לטעון זמינות. נסו לרענן.", true);
+      openMap = new Map();
+      setStatus("לא הצלחנו לטעון זמינות מהשרת. מוצג לוח ריק — נסו לרענן.", true);
     }
+    render();
   }
 
   function render() {
+    if (!el.board || !el.weekLabel) return;
     el.weekLabel.textContent = S.weekLabel(weekStart);
     S.renderBoard(el.board, weekStart, (key, slotStart) => {
+      const past = slotStart.getTime() + cfg.slotMinutes * 60000 <= Date.now();
+      if (past) {
+        return { className: "past", label: "—", disabled: true, title: "עבר" };
+      }
       const open = openMap.has(key);
       if (!open) {
         return { className: "muted", label: "—", disabled: true, title: "לא זמין" };
@@ -254,6 +263,7 @@
   });
 
   initGis();
+  render();
   loadAvailability();
 
   window.__gisReady = () => {
