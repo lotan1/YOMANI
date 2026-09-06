@@ -14,20 +14,66 @@ import {
   DAY_END,
 } from "./_lib.mjs";
 
+async function readToken(req) {
+  const fromHeader =
+    header(req, "x-yomani-token") ||
+    header(req, "authorization").replace(/^Bearer\s+/i, "").trim();
+  if (fromHeader) return fromHeader;
+  try {
+    const url = new URL(req.url);
+    const q = url.searchParams.get("access_token");
+    if (q) return q;
+  } catch {
+    /* ignore */
+  }
+  return "";
+}
+
+function header(req, name) {
+  try {
+    if (req.headers && typeof req.headers.get === "function") {
+      return (
+        req.headers.get(name) ||
+        req.headers.get(name.toLowerCase()) ||
+        req.headers.get(name.toUpperCase()) ||
+        ""
+      );
+    }
+  } catch {
+    /* ignore */
+  }
+  const h = req.headers || {};
+  return h[name] || h[name.toLowerCase()] || "";
+}
+
 async function adminEmailFromAuth(req) {
-  const token =
-    req.headers.get("x-yomani-token") ||
-    (req.headers.get("authorization") || "").replace(/^Bearer\s+/i, "").trim();
-  if (!token) return "";
+  const token = await readToken(req);
+  if (!token) return { email: "", reason: "missing_token" };
+
+  // Prefer tokeninfo (query-based; reliable from serverless)
+  try {
+    const tip = await fetch(
+      `https://oauth2.googleapis.com/tokeninfo?access_token=${encodeURIComponent(token)}`
+    );
+    if (tip.ok) {
+      const info = await tip.json();
+      const email = String(info.email || "").toLowerCase();
+      if (email) return { email, reason: "ok" };
+    }
+  } catch {
+    /* fall through */
+  }
+
   try {
     const res = await fetch("https://www.googleapis.com/oauth2/v3/userinfo", {
       headers: { Authorization: `Bearer ${token}` },
     });
-    if (!res.ok) return "";
+    if (!res.ok) return { email: "", reason: `userinfo_${res.status}` };
     const me = await res.json();
-    return String(me.email || "").toLowerCase();
+    const email = String(me.email || "").toLowerCase();
+    return email ? { email, reason: "ok" } : { email: "", reason: "no_email_in_token" };
   } catch {
-    return "";
+    return { email: "", reason: "verify_failed" };
   }
 }
 
@@ -38,9 +84,15 @@ function assertAdmin(email) {
 export default async (req) => {
   if (req.method === "OPTIONS") return corsOptions();
 
-  const email = await adminEmailFromAuth(req);
+  const { email, reason } = await adminEmailFromAuth(req);
   if (!assertAdmin(email)) {
-    return json({ error: "unauthorized", detail: "not an allowed interviewer" }, 401);
+    return json(
+      {
+        error: "unauthorized",
+        detail: reason === "ok" ? "email_not_allowed" : reason,
+      },
+      401
+    );
   }
 
   if (req.method === "GET") {

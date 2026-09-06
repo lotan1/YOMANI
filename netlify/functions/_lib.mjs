@@ -61,7 +61,7 @@ export function json(body, status = 200) {
     headers: {
       "Content-Type": "application/json; charset=utf-8",
       "Access-Control-Allow-Origin": "*",
-      "Access-Control-Allow-Headers": "Content-Type, Authorization",
+      "Access-Control-Allow-Headers": "Content-Type, Authorization, X-Yomani-Token",
       "Access-Control-Allow-Methods": "GET, POST, OPTIONS",
     },
   });

@@ -20,6 +20,8 @@
     btnReload: document.getElementById("btnReload"),
   };
 
+  const SESSION_KEY = "yomani_admin_session";
+
   let tokenClient = null;
   let accessToken = null;
   let userEmail = null;
@@ -32,6 +34,35 @@
   function setStatus(msg, isError = false) {
     el.status.textContent = msg || "";
     el.status.classList.toggle("error", !!isError);
+  }
+
+  function saveSession() {
+    if (!accessToken || !userEmail) return;
+    sessionStorage.setItem(
+      SESSION_KEY,
+      JSON.stringify({ accessToken, userEmail, at: Date.now() })
+    );
+  }
+
+  function clearSession() {
+    sessionStorage.removeItem(SESSION_KEY);
+  }
+
+  function loadSession() {
+    try {
+      const raw = sessionStorage.getItem(SESSION_KEY);
+      if (!raw) return null;
+      const data = JSON.parse(raw);
+      if (!data.accessToken || !data.userEmail) return null;
+      // Access tokens usually last ~1 hour
+      if (Date.now() - (data.at || 0) > 50 * 60 * 1000) {
+        clearSession();
+        return null;
+      }
+      return data;
+    } catch {
+      return null;
+    }
   }
 
   function requestSignIn() {
@@ -52,7 +83,13 @@
   }
 
   async function api(path, options = {}) {
-    const res = await fetch(path, {
+    let url = path;
+    if (accessToken) {
+      const join = path.includes("?") ? "&" : "?";
+      url = `${path}${join}access_token=${encodeURIComponent(accessToken)}`;
+    }
+
+    const res = await fetch(url, {
       ...options,
       headers: {
         "Content-Type": "application/json",
@@ -62,7 +99,10 @@
       },
     });
     const data = await res.json().catch(() => ({}));
-    if (!res.ok) throw new Error(data.error || `HTTP ${res.status}`);
+    if (!res.ok) {
+      const detail = data.detail ? ` (${data.detail})` : "";
+      throw new Error((data.error || `HTTP ${res.status}`) + detail);
+    }
     return data;
   }
 
@@ -72,11 +112,13 @@
     el.btnSignIn.hidden = true;
     el.userChip.hidden = false;
     el.userEmail.textContent = userEmail;
+    saveSession();
   }
 
   function showOut(msg) {
     accessToken = null;
     userEmail = null;
+    clearSession();
     el.gate.hidden = false;
     el.app.hidden = true;
     el.btnSignIn.hidden = false;
@@ -286,6 +328,9 @@
     tokenClient = google.accounts.oauth2.initTokenClient({
       client_id: cfg.clientId,
       scope: [
+        "openid",
+        "email",
+        "profile",
         "https://www.googleapis.com/auth/calendar.freebusy",
         "https://www.googleapis.com/auth/userinfo.email",
       ].join(" "),
@@ -355,4 +400,16 @@
     setStatus("טעינת Google נחסמה. בדקו חוסם פרסומות או נסו דפדפן אחר.", true);
     pendingSignIn = false;
   };
+
+  // Restore session after refresh (same tab)
+  const existing = loadSession();
+  if (existing) {
+    accessToken = existing.accessToken;
+    userEmail = existing.userEmail;
+    showIn();
+    reload().catch((e) => {
+      clearSession();
+      showOut(`יש להתחבר מחדש: ${e.message}`);
+    });
+  }
 })();
